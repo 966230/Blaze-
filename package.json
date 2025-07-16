@@ -1,0 +1,11 @@
+{
+  "name": "blaze-bot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "venom-bot": "^4.0.0"
+  }
+}
