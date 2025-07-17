@@ -1,32 +1,30 @@
-const venom = require('venom-bot');
+const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
+const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-venom.create().then(client => start(client)).catch(console.error);
+async function startSock() {
+  const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
+  const sock = makeWASocket({
+    auth: state,
+    printQRInTerminal: true,
+  });
 
-function start(client) {
-  client.onMessage(async msg => {
-    const time = new Date().getHours();
+  sock.ev.on('creds.update', saveCreds);
+  sock.ev.on('messages.upsert', async ({ messages }) => {
+    const msg = messages[0];
+    if (!msg.message) return;
 
-    if (time < 9 || time >= 21) {
-      return client.sendText(msg.from, '🚫 Blaze अभी ऑफलाइन है।\nकृपया सुबह 9 बजे वापस आएं।');
+    const text = msg.message.conversation || msg.message.extendedTextMessage?.text;
+
+    if (text === 'hi') {
+      await sock.sendMessage(msg.key.remoteJid, { text: 'Hello! I am Blaze 🤖' });
     }
-
-    const body = msg.body.trim().toUpperCase();
-
-    if (body === 'HI' || body === 'HELLO') {
-      return client.sendText(msg.from, '🔥 Blaze here! Products के codes भेजिए (जैसे P001)');
-    }
-
-    const productMap = {
-      "P001": { name: "Red T‑Shirt", price: 20, pay: "https://rzp.io/l/demoP001" },
-      "P002": { name: "Blue Jeans", price: 20, pay: "https://rzp.io/l/demoP002" }
-    };
-
-    if (productMap[body]) {
-      const p = productMap[body];
-      return client.sendText(msg.from,
-        `🛒 Product: ${p.name}\n💰 Price: ₹${p.price}\n\nOrder now: ${p.pay}`);
-    }
-
-    return client.sendText(msg.from, '⚠️ Invalid code! Example: P001');
   });
 }
+
+app.get('/', (req, res) => res.send('Blaze Bot is Running!'));
+app.listen(PORT, () => {
+  console.log('Server started on port ' + PORT);
+  startSock();
+});
